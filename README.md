@@ -97,6 +97,6 @@ python py_li_engage/save_cookie.py
 Once your cookies are saved, execute the master orchestrator pipeline:
 
 ```powershell
-python -m py_li_engage.engage
+python py_li_engage/engage.py
 
 ``` 
