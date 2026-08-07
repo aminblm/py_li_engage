@@ -19,7 +19,7 @@ async def save_linkedin_cookies() -> None:
         page = await context.new_page()
 
         print(f"Navigating to {LOGIN_URL}...")
-        await page.goto(LOGIN_URL, wait_until="networkidle")
+        await page.goto(LOGIN_URL, wait_until="domcontentloaded")
 
         print(
             f"Please log in manually. Waiting {LOGIN_WAIT_TIMEOUT // 1000} seconds..."
