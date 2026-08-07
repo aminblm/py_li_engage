@@ -1,5 +1,7 @@
 import asyncio
 import sys
+
+from playwright.async_api import Browser
 from py_li_engage.config import ConfigLoader, MACRO_BREAK_MAX_MS, MACRO_BREAK_MIN_MS, logger
 from py_li_engage.services import BrowserSessionManager, GroqService, HumanBehaviorUtility
 from py_li_engage.workflow_elements import (
@@ -26,7 +28,7 @@ class WorkflowOrchestrator:
 
             logger.info("[Workflow] Step 2: Initializing browser session...")
             browser, _context, page = await BrowserSessionManager.initialize()
-            browser_instance = browser
+            browser_instance: Browser = browser
 
             extract_url_element = ExtractPostUrlElement()
             extract_content_element = ExtractPostContentElement()

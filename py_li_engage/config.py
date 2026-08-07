@@ -78,7 +78,7 @@ class ConfigLoader:
     def load_target_urls() -> list[str]:
         logger.info("Loading profile targets from json file...")
         try:
-            profiles_path = Path(__file__).parent.parent / PROFILES_FILE_NAME
+            profiles_path: Path = Path(__file__).parent.parent / PROFILES_FILE_NAME
             if not profiles_path.exists():
                 raise FileNotFoundError(f"Profiles file not found at: {profiles_path}")
             

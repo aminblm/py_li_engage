@@ -1,7 +1,9 @@
 import asyncio
 import json
 from pathlib import Path
-from playwright.async_api import async_playwright
+from typing import List
+from playwright._impl._api_structures import Cookie
+from playwright.async_api import Browser, BrowserContext, async_playwright
 
 COOKIE_FILE = Path("data/linkedin-cookies.json")
 LOGIN_URL = "https://www.linkedin.com/login"
@@ -12,8 +14,8 @@ async def save_linkedin_cookies() -> None:
     """Launches a browser for manual LinkedIn login and saves session cookies."""
     async with async_playwright() as p:
         # Launch browser in headed mode maximized
-        browser = await p.chromium.launch(headless=False)
-        context = await browser.new_context(
+        browser: Browser = await p.chromium.launch(headless=False)
+        context: BrowserContext = await browser.new_context(
             no_viewport=True  # Respects maximized/custom window bounds
         )
         page = await context.new_page()
@@ -27,7 +29,7 @@ async def save_linkedin_cookies() -> None:
         await asyncio.sleep(LOGIN_WAIT_TIMEOUT / 1000)
 
         # Extract and save cookies securely
-        cookies = await context.cookies()
+        cookies: List[Cookie] = await context.cookies()
         COOKIE_FILE.write_text(json.dumps(cookies, indent=2), encoding="utf-8")
 
         print(f"Success! Cookies saved to {COOKIE_FILE.resolve()}")
