@@ -13,3 +13,5 @@ env/
 # IDEs
 .vscode/
 .sublime-*
+
+uv.lock
