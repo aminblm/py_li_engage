@@ -1,0 +1,15 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+
+# Environment and Secrets
+.env
+*.json
+!example-cookies.json
+
+# IDEs
+.vscode/
+.sublime-*
