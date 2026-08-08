@@ -4,28 +4,10 @@ import sys
 from pathlib import Path
 from playwright.async_api._context_manager import PlaywrightContextManager
 from playwright.async_api import Browser, BrowserContext, Page, Playwright, async_playwright
-from py_li_engage.config import (
-    COOKIES_FILE_PATH,
-    DEFAULT_LOGIN_NAVIGATION_TIMEOUT_MS,
-    DEFAULT_VIEWPORT_SETTING,
-    BROWSER_HEADLESS_MODE,
-    DOM_CONTENT_LOADED_STR,
-    FEED_ROUTE_PATH,
-    JSON_INDENT_SPACES,
-    UTF8_ENCODING,
-    LOGIN_URL,
-    POST_LOGIN_INDICATOR_URL,
-    logger,
-)
-from py_li_engage.constants.log_messages import (
-    NAVIGATING_LOGIN_INFO,
-    MANUAL_LOGIN_PROMPT_INFO,
-    LOGIN_REDIRECT_SUCCESS_INFO,
-    LOGIN_REDIRECT_TIMEOUT_WARNING,
-    COOKIES_NOT_FOUND_ERROR,
-    COOKIES_SAVED_SUCCESS_INFO,
-    SAVE_ERROR_CRITICAL,
-)
+
+from py_li_engage.config import logger
+from py_li_engage.constants.log_messages import LogMessages
+from py_li_engage.constants.app_constants import AppConstants
 
 
 class CookieSaver:
@@ -47,29 +29,29 @@ class CookieSaver:
 
     async def _initialize_browser(self, p: Playwright) -> tuple[Browser, BrowserContext, Page]:
         browser = await p.chromium.launch(headless=self._headless_mode)
-        context = await browser.new_context(no_viewport=DEFAULT_VIEWPORT_SETTING)
+        context = await browser.new_context(no_viewport=AppConstants.DEFAULT_VIEWPORT_SETTING)
         page = await context.new_page()
         return browser, context, page
 
     async def _wait_for_login(self, page: Page) -> None:
-        logger.info(NAVIGATING_LOGIN_INFO.format(self._login_url))
-        await page.goto(self._login_url, wait_until=DOM_CONTENT_LOADED_STR)
+        logger.info(LogMessages.NAVIGATING_LOGIN_INFO.format(self._login_url))
+        await page.goto(self._login_url, wait_until=AppConstants.DOM_CONTENT_LOADED_STR)
         
-        logger.info(MANUAL_LOGIN_PROMPT_INFO)
+        logger.info(LogMessages.MANUAL_LOGIN_PROMPT_INFO)
         try:
             await page.wait_for_url(
-                lambda url: FEED_ROUTE_PATH in url or url.startswith(self._post_login_indicator),
+                lambda url: AppConstants.FEED_ROUTE_PATH in url or url.startswith(self._post_login_indicator),
                 timeout=self._timeout_ms
             )
-            logger.info(LOGIN_REDIRECT_SUCCESS_INFO)
+            logger.info(LogMessages.LOGIN_REDIRECT_SUCCESS_INFO)
         except Exception:
-            logger.warning(LOGIN_REDIRECT_TIMEOUT_WARNING)
+            logger.warning(LogMessages.LOGIN_REDIRECT_TIMEOUT_WARNING)
 
     def _persist_cookies(self, cookies: list) -> None:
         self._cookie_file.parent.mkdir(parents=True, exist_ok=True)
-        serialized_cookies = json.dumps(cookies, indent=JSON_INDENT_SPACES)
-        self._cookie_file.write_text(serialized_cookies, encoding=UTF8_ENCODING)
-        logger.info(COOKIES_SAVED_SUCCESS_INFO.format(self._cookie_file.resolve()))
+        serialized_cookies = json.dumps(cookies, indent=AppConstants.JSON_INDENT_SPACES)
+        self._cookie_file.write_text(serialized_cookies, encoding=AppConstants.UTF8_ENCODING)
+        logger.info(LogMessages.COOKIES_SAVED_SUCCESS_INFO.format(self._cookie_file.resolve()))
 
     async def save(self) -> bool:
         browser, context, page = None, None, None
@@ -80,14 +62,14 @@ class CookieSaver:
 
                 cookies = await context.cookies()
                 if not cookies:
-                    logger.error(COOKIES_NOT_FOUND_ERROR)
+                    logger.error(LogMessages.COOKIES_NOT_FOUND_ERROR)
                     return False
 
                 self._persist_cookies(cookies)
                 return True
 
         except Exception as error:
-            logger.critical(SAVE_ERROR_CRITICAL.format(error))
+            logger.critical(LogMessages.SAVE_ERROR_CRITICAL.format(error))
             return False
             
         finally:
@@ -97,12 +79,12 @@ class CookieSaver:
 
 def main() -> None:
     saver = CookieSaver(
-        cookie_file=COOKIES_FILE_PATH,
+        cookie_file=AppConstants.COOKIES_FILE_PATH,
         playwright_context_manager=async_playwright(),
-        login_url=LOGIN_URL,
-        post_login_indicator=POST_LOGIN_INDICATOR_URL,
-        headless_mode=BROWSER_HEADLESS_MODE,
-        timeout_ms=DEFAULT_LOGIN_NAVIGATION_TIMEOUT_MS,
+        login_url=AppConstants.LOGIN_URL,
+        post_login_indicator=AppConstants.POST_LOGIN_INDICATOR_URL,
+        headless_mode=AppConstants.BROWSER_HEADLESS_MODE,
+        timeout_ms=AppConstants.DEFAULT_LOGIN_NAVIGATION_TIMEOUT_MS,
     )
     
     success: bool = asyncio.run(saver.save())
