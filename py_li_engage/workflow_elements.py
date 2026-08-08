@@ -1,17 +1,8 @@
-from py_li_engage.config import (
-    NAVIGATION_TIMEOUT_MS,
-    PAGE_LOAD_WAIT_MS,
-    SLEEP_SHORT_MS,
-    SLEEP_LIKE_MS,
-    SLEEP_INSERT_MS,
-    SLEEP_PUBLISH_MS,
-    SLEEP_MODAL_MS,
-    SLEEP_CONTEXT_MS,
-    SELECTORS,
-    logger,
-)
-from py_li_engage.services import HumanBehaviorUtility
 from playwright.async_api import Page
+
+from py_li_engage.config import logger
+from py_li_engage.constants.app_constants import AppConstants
+from py_li_engage.services.humanization import SleepEngine, ScrollingEngine, ReadingBehavior, TypingBehavior
 
 
 class BaseWorkflowElement:
@@ -44,25 +35,25 @@ class ExtractPostUrlElement(BaseWorkflowElement):
         await self.clear_page_state(page)
 
         try:
-            await page.goto(target_url, wait_until="domcontentloaded", timeout=NAVIGATION_TIMEOUT_MS)
+            await page.goto(target_url, wait_until="domcontentloaded", timeout=AppConstants.DEFAULT_NAVIGATION_TIMEOUT_MS)
         except Exception:
             logger.warning("Navigation timeout reached during profile load, continuing execution...", extra={"targetUrl": target_url})
 
-        await HumanBehaviorUtility.stochastic_sleep(PAGE_LOAD_WAIT_MS)
+        await HumanBehaviorUtility.stochastic_sleep(AppConstants.PAGE_LOAD_WAIT_MS)
         await HumanBehaviorUtility.human_scroll_scan(page)
 
-        share_btn_exists = await page.query_selector(SELECTORS["SHARE_BUTTON"])
+        share_btn_exists = await page.query_selector(AppConstants.SELECTORS["SHARE_BUTTON"])
         if not share_btn_exists:
             raise RuntimeError("Share button not found on profile. Skipping target link.")
 
-        await HumanBehaviorUtility.smooth_scroll_to_element(page, SELECTORS["SHARE_BUTTON"])
+        await HumanBehaviorUtility.smooth_scroll_to_element(page, AppConstants.SELECTORS["SHARE_BUTTON"])
 
         await page.evaluate(
             """(selectors) => {
                 const shareBtn = document.querySelector(selectors.SHARE_BUTTON);
                 if (shareBtn) shareBtn.click();
             }""",
-            SELECTORS,
+            AppConstants.SELECTORS,
         )
 
         await HumanBehaviorUtility.stochastic_sleep(1000)
@@ -98,7 +89,7 @@ class ExtractPostUrlElement(BaseWorkflowElement):
             SELECTORS,
         )
 
-        await HumanBehaviorUtility.stochastic_sleep(SLEEP_SHORT_MS)
+        await HumanBehaviorUtility.stochastic_sleep(AppConstants.SLEEP_SHORT_MS)
         logger.info(f"Extracted post URL: {post_url}")
         return post_url
 
@@ -113,11 +104,11 @@ class ExtractPostContentElement(BaseWorkflowElement):
         await self.clear_page_state(page)
 
         try:
-            await page.goto(post_url, wait_until="domcontentloaded", timeout=NAVIGATION_TIMEOUT_MS)
+            await page.goto(post_url, wait_until="domcontentloaded", timeout=AppConstants.NAVIGATION_TIMEOUT_MS)
         except Exception:
             logger.warning("Navigation timeout reached during post load, continuing execution...", extra={"postUrl": post_url})
 
-        await HumanBehaviorUtility.stochastic_sleep(PAGE_LOAD_WAIT_MS)
+        await HumanBehaviorUtility.stochastic_sleep(AppConstants.PAGE_LOAD_WAIT_MS)
         await HumanBehaviorUtility.human_scroll_scan(page)
 
         post_content = await page.evaluate(
@@ -154,9 +145,9 @@ class LikePostElement(BaseWorkflowElement):
     async def execute(self, page: Page) -> dict[str, str]:
         logger.info("Checking and executing like action on post with smooth scroll.")
         
-        like_button_exists = await page.query_selector(SELECTORS["LIKE_BUTTON"])
+        like_button_exists = await page.query_selector(AppConstants.SELECTORS["LIKE_BUTTON"])
         if like_button_exists:
-            await HumanBehaviorUtility.smooth_scroll_to_element(page, SELECTORS["LIKE_BUTTON"])
+            await HumanBehaviorUtility.smooth_scroll_to_element(page, AppConstants.SELECTORS["LIKE_BUTTON"])
 
         like_status = await page.evaluate(
             """async (selectors) => {
@@ -176,7 +167,7 @@ class LikePostElement(BaseWorkflowElement):
             SELECTORS,
         )
 
-        await HumanBehaviorUtility.stochastic_sleep(SLEEP_LIKE_MS)
+        await HumanBehaviorUtility.stochastic_sleep(AppConstants.SLEEP_LIKE_MS)
         logger.info("Like workflow completed.", extra={"likeStatus": like_status})
         return like_status
 
@@ -189,8 +180,8 @@ class PublishCommentElement(BaseWorkflowElement):
     async def execute(self, page: Page, comment_text: str) -> None:
         logger.info("Inserting and publishing generated comment via human typing dynamics.")
         
-        await HumanBehaviorUtility.human_type(page, SELECTORS["COMMENT_EDITOR_BOX"], comment_text)
-        await HumanBehaviorUtility.stochastic_sleep(SLEEP_INSERT_MS)
+        await HumanBehaviorUtility.human_type(page, AppConstants.SELECTORS["COMMENT_EDITOR_BOX"], comment_text)
+        await HumanBehaviorUtility.stochastic_sleep(AppConstants.SLEEP_INSERT_MS)
 
         published = await page.evaluate(
             """async (selectors) => {
@@ -210,13 +201,13 @@ class PublishCommentElement(BaseWorkflowElement):
                 clickableElement.click();
                 return true;
             }""",
-            SELECTORS,
+            AppConstants.SELECTORS,
         )
 
         if not published:
             raise RuntimeError("Publish comment button not found or is disabled.")
 
-        await HumanBehaviorUtility.stochastic_sleep(SLEEP_PUBLISH_MS)
+        await HumanBehaviorUtility.stochastic_sleep(AppConstants.SLEEP_PUBLISH_MS)
         logger.info("Comment published successfully.")
 
 
@@ -393,7 +384,7 @@ class MultiProfileAutomationElement(BaseWorkflowElement):
 
                 return { totalProfiles, profilesProcessed: detailedStates };
             }""",
-            [SLEEP_SHORT_MS, SLEEP_MODAL_MS, SLEEP_CONTEXT_MS, SLEEP_LIKE_MS, SELECTORS],
+            [AppConstants.SLEEP_SHORT_MS, AppConstants.SLEEP_MODAL_MS, AppConstants.SLEEP_CONTEXT_MS, AppConstants.SLEEP_LIKE_MS, AppConstants.SELECTORS],
         )
 
         logger.info("Multi-profile automation execution completed.", extra={"profileExecutionStats": profile_execution_stats})

@@ -2,8 +2,13 @@ import asyncio
 import sys
 
 from playwright.async_api import Browser
-from py_li_engage.config import ConfigLoader, MACRO_BREAK_MAX_MS, MACRO_BREAK_MIN_MS, logger
-from py_li_engage.services import BrowserSessionManager, GroqService, HumanBehaviorUtility
+from py_li_engage.config import logger
+from py_li_engage.services.browser import BrowserSessionManager
+from py_li_engage.services.comments import GroqService
+from py_li_engage.constants.app_secrets import AppSecrets
+from py_li_engage.constants.app_constants import AppConstants
+from py_li_engage.data.linkedin_profiles_urls import LINKEDIN_PROFILES_URLS
+from py_li_engage.services.humanization import SleepEngine, ScrollingEngine, ReadingBehavior, TypingBehavior
 from py_li_engage.workflow_elements import (
     ExtractPostContentElement,
     ExtractPostUrlElement,
@@ -23,8 +28,6 @@ class WorkflowOrchestrator:
 
         try:
             logger.info("[Workflow] Step 1: Loading configuration and target URLs...")
-            api_key = ConfigLoader.load_api_key()
-            target_urls = ConfigLoader.load_target_urls()
 
             logger.info("[Workflow] Step 2: Initializing browser session...")
             browser, _context, page = await BrowserSessionManager.initialize()
@@ -37,10 +40,10 @@ class WorkflowOrchestrator:
             multi_profile_element = MultiProfileAutomationElement()
 
             link_index = 0
-            for target_url in target_urls:
+            for target_url in LINKEDIN_PROFILES_URLS:
                 link_index += 1
                 logger.info(f"[Workflow] --------------------------------------------------")
-                logger.info(f"[Workflow] Processing Target Link [{link_index} of {len(target_urls)}]: {target_url}")
+                logger.info(f"[Workflow] Processing Target Link [{link_index} of {len(LINKEDIN_PROFILES_URLS)}]: {target_url}")
                 logger.info(f"[Workflow] --------------------------------------------------")
 
                 link_execution_record: dict[str, str | int | None | dict[str, str]] = {
@@ -63,7 +66,7 @@ class WorkflowOrchestrator:
                     post_content = await extract_content_element.execute(page, post_url)
 
                     logger.info("[Workflow] Step 5: Generating short comment via Groq...")
-                    short_comment = await GroqService.generate_comment(api_key, post_content)
+                    short_comment = await GroqService.generate_comment(AppSecrets.GROQ_API_KEY, post_content)
                     link_execution_record["commentGenerated"] = short_comment
                     logger.info(f'[Workflow] Generated Short Comment: "{short_comment}"')
 
@@ -85,10 +88,10 @@ class WorkflowOrchestrator:
                     logger.warning(f"[Workflow Notice] Skipping URL {target_url} due to error: {url_iteration_error}")
                 finally:
                     global_pipeline_summary.append(link_execution_record)
-                    logger.info(f"[Workflow Intermediary Progress Report] Finished processing link {link_index}/{len(target_urls)}")
+                    logger.info(f"[Workflow Intermediary Progress Report] Finished processing link {link_index}/{len(LINKEDIN_PROFILES_URLS)}")
 
-                    if link_index < len(target_urls):
-                        await HumanBehaviorUtility.random_macro_break(MACRO_BREAK_MIN_MS, MACRO_BREAK_MAX_MS)
+                    if link_index < len(LINKEDIN_PROFILES_URLS):
+                        await SleepEngine.random_macro_break(AppConstants.MACRO_BREAK_MIN_MS, AppConstants.MACRO_BREAK_MAX_MS)
 
             logger.info("================================================================")
             logger.info("            FINAL PIPELINE EXECUTION STATISTICS & STATES        ")
