@@ -2,7 +2,7 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Final, Protocol, Tuple, List
+from typing import Final, Protocol
 from playwright.async_api import Browser, BrowserContext, Page, Playwright
 from playwright.async_api._context_manager import PlaywrightContextManager
 
@@ -12,7 +12,7 @@ from py_li_engage.constants.app_constants import AppConstants
 
 
 class BrowserInitializerProtocol(Protocol):
-    async def initialize(self, p: Playwright) -> Tuple[Browser, BrowserContext, Page]: ...
+    async def initialize(self, p: Playwright) -> tuple[Browser, BrowserContext, Page]: ...
 
 
 class LoginAuthenticatorProtocol(Protocol):
@@ -20,7 +20,7 @@ class LoginAuthenticatorProtocol(Protocol):
 
 
 class CookieStorageProtocol(Protocol):
-    def persist(self, cookies: List[dict]) -> None: ...
+    def persist(self, cookies: list[dict]) -> None: ...
 
 
 class PlaywrightBrowserInitializer:
@@ -28,7 +28,7 @@ class PlaywrightBrowserInitializer:
         self._headless_mode: Final[bool] = headless_mode
         self._viewport_setting: Final[bool] = viewport_setting
 
-    async def initialize(self, p: Playwright) -> Tuple[Browser, BrowserContext, Page]:
+    async def initialize(self, p: Playwright) -> tuple[Browser, BrowserContext, Page]:
         browser: Browser = await p.chromium.launch(headless=self._headless_mode)
         context: BrowserContext = await browser.new_context(no_viewport=self._viewport_setting)
         page: Page = await context.new_page()
