@@ -1,4 +1,4 @@
-from .config import (
+from py_li_engage.config import (
     NAVIGATION_TIMEOUT_MS,
     PAGE_LOAD_WAIT_MS,
     SLEEP_SHORT_MS,
@@ -10,7 +10,7 @@ from .config import (
     SELECTORS,
     logger,
 )
-from .services import HumanBehaviorUtility
+from py_li_engage.services import HumanBehaviorUtility
 from playwright.async_api import Page
 
 

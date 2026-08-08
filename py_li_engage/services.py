@@ -6,7 +6,7 @@ from pathlib import Path
 import httpx
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 
-from .config import (
+from py_li_engage.config import (
     COOKIES_FILE_NAME,
     GROQ_API_URL,
     GROQ_MODEL_NAME,
