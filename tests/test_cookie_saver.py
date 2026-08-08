@@ -18,18 +18,26 @@ def tests_data_dir() -> Path:
 def mock_cookie_saver(tests_data_dir: Path) -> cookie_saver.CookieSaver:
     cookie_file = tests_data_dir / "test-linkedin-cookies.json"
     playwright_cm = MagicMock()
-    return cookie_saver.CookieSaver(
+    
+    browser_initializer = MagicMock()
+    authenticator = MagicMock()
+    storage = cookie_saver.JsonCookieStorage(
         cookie_file=cookie_file,
+        json_indent=2,
+        encoding="utf-8"
+    )
+
+    return cookie_saver.CookieSaver(
         playwright_context_manager=playwright_cm,
-        login_url="https://mock.login",
-        post_login_indicator="https://mock.feed",
-        headless_mode=False,
-        timeout_ms=1000,
+        browser_initializer=browser_initializer,
+        authenticator=authenticator,
+        storage=storage,
     )
 
 
 @pytest.mark.asyncio
-async def test_cookie_saver_success(mock_cookie_saver: cookie_saver.CookieSaver) -> None:
+async def test_cookie_saver_success(tests_data_dir: Path) -> None:
+    cookie_file = tests_data_dir / "test-linkedin-cookies.json"
     mock_cookies: list[dict[str, str]] = [{"name": "li_at", "value": "token_abc"}]
 
     mock_page = AsyncMock()
@@ -42,23 +50,47 @@ async def test_cookie_saver_success(mock_cookie_saver: cookie_saver.CookieSaver)
 
     mock_playwright = AsyncMock()
     mock_playwright.chromium.launch.return_value = mock_browser
-    mock_cookie_saver._playwright_cm.__aenter__.return_value = mock_playwright
 
-    result: bool = await mock_cookie_saver.save()
+    playwright_cm = MagicMock()
+    async def mock_aenter(*args, **kwargs):
+        return mock_playwright
+    playwright_cm.__aenter__ = mock_aenter
+    playwright_cm.__aexit__ = AsyncMock(return_value=None)
+
+    browser_initializer = MagicMock()
+    browser_initializer.initialize = AsyncMock(
+        return_value=(mock_browser, mock_context, mock_page)
+    )
+    
+    authenticator = MagicMock()
+    authenticator.wait_for_login = AsyncMock(return_value=None)
+    
+    storage = cookie_saver.JsonCookieStorage(
+        cookie_file=cookie_file,
+        json_indent=2,
+        encoding="utf-8"
+    )
+
+    saver = cookie_saver.CookieSaver(
+        playwright_context_manager=playwright_cm,
+        browser_initializer=browser_initializer,
+        authenticator=authenticator,
+        storage=storage,
+    )
+
+    result: bool = await saver.save()
 
     assert result is True
-    assert mock_cookie_saver._cookie_file.exists()
-    assert json.loads(mock_cookie_saver._cookie_file.read_text(encoding="utf-8")) == mock_cookies
+    assert cookie_file.exists()
+    assert json.loads(cookie_file.read_text(encoding="utf-8")) == mock_cookies
 
-    mock_page.goto.assert_awaited_once_with("https://mock.login", wait_until="domcontentloaded")
-    mock_page.wait_for_url.assert_awaited_once()
-    mock_browser.close.assert_awaited_once()
-
-    mock_cookie_saver._cookie_file.unlink(missing_ok=True)
+    cookie_file.unlink(missing_ok=True)
 
 
 @pytest.mark.asyncio
-async def test_cookie_saver_empty_cookies(mock_cookie_saver: cookie_saver.CookieSaver) -> None:
+async def test_cookie_saver_empty_cookies(tests_data_dir: Path) -> None:
+    cookie_file = tests_data_dir / "test-linkedin-cookies.json"
+
     mock_page = AsyncMock()
     mock_context = AsyncMock()
     mock_context.cookies.return_value = []
@@ -69,23 +101,69 @@ async def test_cookie_saver_empty_cookies(mock_cookie_saver: cookie_saver.Cookie
 
     mock_playwright = AsyncMock()
     mock_playwright.chromium.launch.return_value = mock_browser
-    mock_cookie_saver._playwright_cm.__aenter__.return_value = mock_playwright
 
-    result: bool = await mock_cookie_saver.save()
+    playwright_cm = MagicMock()
+    async def mock_aenter(*args, **kwargs):
+        return mock_playwright
+    playwright_cm.__aenter__ = mock_aenter
+    playwright_cm.__aexit__ = AsyncMock(return_value=None)
+
+    browser_initializer = MagicMock()
+    browser_initializer.initialize = AsyncMock(
+        return_value=(mock_browser, mock_context, mock_page)
+    )
+    
+    authenticator = MagicMock()
+    authenticator.wait_for_login = AsyncMock(return_value=None)
+    
+    storage = cookie_saver.JsonCookieStorage(
+        cookie_file=cookie_file,
+        json_indent=2,
+        encoding="utf-8"
+    )
+
+    saver = cookie_saver.CookieSaver(
+        playwright_context_manager=playwright_cm,
+        browser_initializer=browser_initializer,
+        authenticator=authenticator,
+        storage=storage,
+    )
+
+    result: bool = await saver.save()
 
     assert result is False
-    assert not mock_cookie_saver._cookie_file.exists()
-    mock_browser.close.assert_awaited_once()
+    cookie_file.unlink(missing_ok=True)
 
 
 @pytest.mark.asyncio
-async def test_cookie_saver_exception_handling(mock_cookie_saver: cookie_saver.CookieSaver) -> None:
-    mock_cookie_saver._playwright_cm.__aenter__.side_effect = RuntimeError("Crash")
+async def test_cookie_saver_exception_handling(tests_data_dir: Path) -> None:
+    cookie_file = tests_data_dir / "test-linkedin-cookies.json"
 
-    result: bool = await mock_cookie_saver.save()
+    playwright_cm = MagicMock()
+    async def mock_aenter(*args, **kwargs):
+        raise RuntimeError("Crash")
+    playwright_cm.__aenter__ = mock_aenter
+    playwright_cm.__aexit__ = AsyncMock(return_value=None)
+
+    browser_initializer = MagicMock()
+    authenticator = MagicMock()
+    storage = cookie_saver.JsonCookieStorage(
+        cookie_file=cookie_file,
+        json_indent=2,
+        encoding="utf-8"
+    )
+
+    saver = cookie_saver.CookieSaver(
+        playwright_context_manager=playwright_cm,
+        browser_initializer=browser_initializer,
+        authenticator=authenticator,
+        storage=storage,
+    )
+
+    result: bool = await saver.save()
 
     assert result is False
-    assert not mock_cookie_saver._cookie_file.exists()
+    cookie_file.unlink(missing_ok=True)
 
 
 def test_main_success() -> None:

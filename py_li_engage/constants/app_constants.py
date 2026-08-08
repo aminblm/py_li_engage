@@ -1,11 +1,9 @@
 from pathlib import Path
-from typing import Final, Dict
+from typing import Final
 
 
 class AppConstants:
-    COOKIES_FILE_PATH: Final[Path] = Path(__file__).parent.parent.parent / "data/linkedin-cookies.json"
-    CONFIG_FILE_PATH: Final[Path] = Path("data/config.json")
-    PROFILES_FILE_PATH: Final[Path] = Path("data/linkedin-profiles.json")
+    COOKIES_FILE_PATH: Final[Path] = Path(__file__).parent.parent.parent / "py_li_engage/data/linkedin-cookies.json"
     
     GROQ_API_URL: Final[str] = "https://api.groq.com/openai/v1/chat/completions"
     GROQ_MODEL_NAME: Final[str] = "llama-3.3-70b-versatile"
@@ -46,7 +44,7 @@ class AppConstants:
     LOGGER_NAME: Final[str] = "LinkedInAutomation"
     LOG_DATE_FORMAT: Final[str] = "%Y-%m-%dT%H:%M:%SZ"
 
-    SELECTORS: Final[Dict[str, str]] = {
+    SELECTORS: Final[dict[str, str]] = {
         "SHARE_BUTTON": 'button[aria-label*="Share" i], a[aria-label*="Share" i], button[aria-label*="Send" i], a[aria-label*="Send" i], [class*="share-button"], [class*="social-share"]',
         "COPY_LINK_CANDIDATE": 'button, div[role="button"], a, span, li',
         "POST_URL_MODAL": 'div[role="dialog"] a[href*="http"], .artdeco-modal a[href*="http"], a[href*="/posts/"], a[href*="/status/"]',

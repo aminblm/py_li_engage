@@ -16,3 +16,6 @@ env/
 
 uv.lock
 .pytest_cache
+
+app_secrets.py
+linkedin_profiles_urls.py
