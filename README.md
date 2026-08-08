@@ -88,7 +88,7 @@ Create your configuration files inside the `data/` directory:
 First, run the session cookie saver script to log in manually and cache your authenticated session state:
 
 ```powershell
-python py_li_engage/save_cookie.py
+python py_li_engage/cookie_saver.py
 
 ```
 
